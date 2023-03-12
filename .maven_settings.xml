@@ -19,4 +19,11 @@
             </repositories>
         </profile>
     </profiles>
+    <servers>
+        <server>
+            <id>pulsar-message-types</id>
+            <username>${env.CI_DEPLOY_USERNAME}</username>
+            <password>${env.CI_DEPLOY_PASSWORD}</password>
+        </server>
+    </servers>
 </settings>

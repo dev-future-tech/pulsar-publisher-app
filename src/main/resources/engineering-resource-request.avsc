@@ -1,0 +1,49 @@
+{
+  "type" : "record",
+  "namespace" : "com.example.pulsarproducerapp",
+  "name" : "EngineerResourceRequest",
+  "fields": [
+    {
+      "name": "engineerId",
+      "type": "long"
+    },
+    {
+      "name": "role",
+      "type" : [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "resources",
+      "type":
+        {
+          "type": "array",
+          "items": {
+            "name": "EngineeringResource",
+            "namespace": "com.example.pulsarproducerapp",
+            "type": "record",
+            "fields": [
+              {
+                "name" : "resourceType",
+                "type" : {
+                  "type" : "enum",
+                  "name" : "ResourceType",
+                  "symbols": ["LAPTOP", "VPN", "DEVPORTAL", "EMAIL", "IM"]
+                }
+              },
+              {
+                "name" : "resourceName",
+                "type" : ["null", "string"]
+              },
+              {
+                "name" : "approved",
+                "type" : "boolean",
+                "default": false
+              }
+            ]
+          }
+        }
+    }
+  ]
+}

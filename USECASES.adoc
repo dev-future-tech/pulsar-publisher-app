@@ -1,0 +1,74 @@
+= Use Cases
+
+== Publish to Topic, Transform and Store to PostgreSQL
+
+=== Pretext
+
+We are onboarding new engineers to a project and once their resource provisioning is complete, we want to create an order and calculate the cost of the requested resources.
+
+=== Prerequisites
+Array of ProjectResources
+
+Schema
+
+[source,avroschema]
+----
+{
+  "type" : "record",
+  "namespace" : "com.example.pulsarproducerapp",
+  "name" : "EngineerResourceRequest",
+  "fields": [
+    {
+      "name": "engineerId",
+      "type": "long"
+    },
+    {
+      "name": "role",
+      "type" : [
+        "null",
+        "string"
+      ]
+    },
+    {
+      "name": "resources",
+      "type":
+        {
+          "type": "array",
+          "items": {
+            "name": "EngineeringResource",
+            "namespace": "com.example.pulsarproducerapp",
+            "type": "record",
+            "fields": [
+              {
+                "name" : "resourceType",
+                "type" : {
+                  "type" : "enum",
+                  "name" : "ResourceType",
+                  "symbols": ["LAPTOP", "VPN", "DEVPORTAL", "EMAIL", "IM"]
+                }
+              },
+              {
+                "name" : "resourceName",
+                "type" : ["null", "string"]
+              },
+              {
+                "name" : "approved",
+                "type" : "boolean",
+                "default": false
+              }
+            ]
+          }
+        }
+    }
+  ]
+}
+----
+
+=== Set up a Database
+
+[source,sql]
+----
+create role provisioner_user with login password 'letmein';
+create database onboarding_db with owner provisioner_user;
+----
+
