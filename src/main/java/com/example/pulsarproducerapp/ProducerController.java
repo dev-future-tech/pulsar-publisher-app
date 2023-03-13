@@ -30,7 +30,7 @@ public class ProducerController {
             MessageId msgId = this.template
                     .newMessage(message)
                     .withMessageCustomizer(mb -> mb.key("my-key"))
-                    .withTopic("persistent://public/default/alerts").send();
+                    .withTopic("persistent://test/test-namespace/test_topic").send();
             log.debug("Message sent! Id is: {}", msgId.toString());
 
             return ResponseEntity.accepted().header("X-Message-Id", msgId.toString()).build();

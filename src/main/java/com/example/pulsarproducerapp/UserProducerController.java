@@ -39,7 +39,7 @@ public class UserProducerController {
 
         try {
             producer = client.newProducer(JSONSchema.of(User.class))
-                    .topic("persistent://public/default/users")
+                    .topic("persistent://test/test-namespace/test_topic")
                     .create();
 
             producer.send(user);
