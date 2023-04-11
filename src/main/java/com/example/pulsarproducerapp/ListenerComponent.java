@@ -10,7 +10,7 @@ public class ListenerComponent {
 
     private final Logger log = LoggerFactory.getLogger(ListenerComponent.class);
 
-    @PulsarListener(subscriptionName = "spring-app", topics = {"persistent://public/default/alerts"})
+    @PulsarListener(subscriptionName = "spring-app", topics = {"persistent://my-tenant/my-namespace/alerts"})
     void listen(String message) {
         log.info("Message received {}", message);
     }

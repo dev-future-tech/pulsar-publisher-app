@@ -11,7 +11,7 @@ public class UserConsumerComponent {
 
     private final Logger log = LoggerFactory.getLogger(UserConsumerComponent.class);
 
-    @PulsarListener(subscriptionName = "UserConsumer", topics = "persistent://test/test-namespace/string_result")
+    @PulsarListener(subscriptionName = "UserConsumer", topics = "persistent://my-tenant/my-namespace/string_result")
     void listen(User user) {
         log.info("Received user: {}, {} of age {}", user.getLastname(), user.getFirstname(), user.getAge());
     }

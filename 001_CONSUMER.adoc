@@ -1,0 +1,198 @@
+= Consumer Basics
+
+:author: Anthony Ikeda <anthony.ikeda@gmail.com>
+
+== Overview
+
+This module will cover basic consumer practices.
+
+We will:
+
+1. Create a topic and listen for some standard byte messages and print to the console
+2. Create a schema and listen for messages that are bound to the schema (AVRO and JSON)
+
+== Basic Listener - Java
+
+Create a new class: `PantryConsumer`:
+
+.PantryConsumer.java
+[source,java]
+----
+package com.example.pulsarproducerapp;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.pulsar.annotation.PulsarListener;
+import org.springframework.stereotype.Component;
+
+@Component
+public class PantryConsumer {
+
+    private final Logger log = LoggerFactory.getLogger(PantryConsumer.class);
+
+    @PulsarListener(subscriptionName = "basic-listener", topics = {"persistent://my-tenant/my-namespace/trolley"})
+    public void listenForItems(String item) {
+        log.info("Item received: {}", item);
+    }
+}
+----
+
+To publish messages, we will create a new controller:
+
+.PantryController.java
+[source%nowrap,java]
+----
+package com.example.pulsarproducerapp;
+
+import org.apache.pulsar.client.api.MessageId;
+import org.apache.pulsar.client.api.PulsarClientException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
+import org.springframework.pulsar.core.PulsarTemplate;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/pantry")
+public class PantryController {
+
+    private final Logger log = LoggerFactory.getLogger(PantryController.class);
+    private final PulsarTemplate<String> template;
+
+    public PantryController(PulsarTemplate<String> _client) {
+        this.template = _client;
+    }
+
+    @PostMapping
+    public ResponseEntity<Void> createPantryMessage(String message) {
+        try {
+            MessageId msgId = this.template.newMessage(message).withTopic("persistent://my-tenant/my-namespace/trolley").send();
+            log.info("Message id is {}", msgId);
+        } catch(PulsarClientException pce) {
+            log.error("Error sending message");
+            return ResponseEntity.internalServerError().build();
+        }
+
+        return ResponseEntity.ok().build();
+    }
+}
+----
+
+Configure your application with:
+
+.application.properties
+[source,properties]
+----
+spring.pulsar.client.service-url=pulsar://localhost:6650
+spring.pulsar.producer.producer-name=core-producer
+spring.pulsar.consumer.consumer-name=core-consumer
+server.port=8030
+----
+
+Start the application and call the controller endpoint:
+
+[source,bash]
+----
+$  http POST :8030/api/pantry message=="Strawberry"
+HTTP/1.1 200
+Connection: keep-alive
+Content-Length: 0
+Date: Tue, 11 Apr 2023 21:11:09 GMT
+Keep-Alive: timeout=60
+----
+
+The output should be displayed:
+
+----
+c.e.pulsarproducerapp.PantryController   : Message id is 22:3:-1
+c.e.pulsarproducerapp.PantryConsumer     : Item received: Strawberry
+----
+
+== Basic Listener - Python
+
+Create a new file: `pantry_consumer.py`
+
+[source,python]
+----
+import pulsar
+
+client = pulsar.Client("pulsar://localhost:6650")
+
+consumer = client.subscribe(topic="persistent://my-tenant/my-namespace/trolley",
+                            subscription_name="python-basic-listener")
+
+while True:
+    msg = consumer.receive()
+    data = msg.value()
+
+    try:
+        consumer.acknowledge(msg)
+        print("Received message '{}'".format(data))
+    except Exception as e:
+        print(e)
+----
+
+Next we will create the producer:
+
+.pantry_producer.py
+[source,python]
+----
+import pulsar
+
+client = pulsar.Client("pulsar://localhost:6650")
+
+producer = client.create_producer(topic="persistent://my-tenant/my-namespace/trolley",
+                                  producer_name="python-basic-producer")
+
+producer.send("Apples".encode('utf-8'))
+
+client.close()
+----
+
+First run the consumer:
+
+[source%nowrap,bash]
+----
+$ python pantry_consumer.py
+           Client:87 | Subscribing on Topic :persistent://my-tenant/my-namespace/trolley
+ClientConnection:190 | [<none> -> pulsar://localhost:6650] Create ClientConnection, timeout=10000
+   ConnectionPool:97 | Created connection for pulsar://localhost:6650
+ClientConnection:388 | [127.0.0.1:62472 -> 127.0.0.1:6650] Connected to broker
+      HandlerBase:72 | [persistent://my-tenant/my-namespace/trolley, python-basic-listener, 0] Getting connection from pool
+    ConsumerImpl:238 | [persistent://my-tenant/my-namespace/trolley, python-basic-listener, 0] Created consumer on broker [127.0.0.1:62472 -> 127.0.0.1:6650]
+----
+
+Then run the producer:
+
+[source%nowrap,bash]
+----
+$ python pantry_producer.py
+   ClientConnection:190 | [<none> -> pulsar://localhost:6650] Create ClientConnection, timeout=10000
+      ConnectionPool:97 | Created connection for pulsar://localhost:6650
+   ClientConnection:388 | [127.0.0.1:62510 -> 127.0.0.1:6650] Connected to broker
+         HandlerBase:72 | [persistent://my-tenant/my-namespace/trolley, pyton-basic-producer] Getting connection from pool
+       ProducerImpl:202 | [persistent://my-tenant/my-namespace/trolley, pyton-basic-producer] Created producer on broker [127.0.0.1:62510 -> 127.0.0.1:6650]
+         ClientImpl:517 | Closing Pulsar client with 1 producers and 0 consumers
+       ProducerImpl:740 | [persistent://my-tenant/my-namespace/trolley, pyton-basic-producer] Closing producer for topic persistent://my-tenant/my-namespace/trolley
+       ProducerImpl:704 | [persistent://my-tenant/my-namespace/trolley, pyton-basic-producer] Closed producer 0
+  ClientConnection:1600 | [127.0.0.1:62510 -> 127.0.0.1:6650] Connection closed with ConnectError
+       ProducerImpl:697 | Producer - [persistent://my-tenant/my-namespace/trolley, pyton-basic-producer] , [batching  = off]
+   ClientConnection:269 | [127.0.0.1:62510 -> 127.0.0.1:6650] Destroyed connection
+
+
+----
+
+The output of the Consumer should be:
+
+[source%nowrap,bash]
+----
+           Client:87 | Subscribing on Topic :persistent://my-tenant/my-namespace/trolley
+ClientConnection:190 | [<none> -> pulsar://localhost:6650] Create ClientConnection, timeout=10000
+   ConnectionPool:97 | Created connection for pulsar://localhost:6650
+ClientConnection:388 | [127.0.0.1:62528 -> 127.0.0.1:6650] Connected to broker
+      HandlerBase:72 | [persistent://my-tenant/my-namespace/trolley, python-basic-listener, 0] Getting connection from pool
+    ConsumerImpl:238 | [persistent://my-tenant/my-namespace/trolley, python-basic-listener, 0] Created consumer on broker [127.0.0.1:62528 -> 127.0.0.1:6650]
+Received message 'b'Apples''
+----

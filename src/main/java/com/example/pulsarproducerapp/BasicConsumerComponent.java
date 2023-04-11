@@ -10,7 +10,7 @@ public class BasicConsumerComponent {
 
     private final Logger log = LoggerFactory.getLogger(BasicConsumerComponent.class);
 
-    @PulsarListener(subscriptionName = "BasicConsumer", topics = "persistent://test/test-namespace/string_result")
+    @PulsarListener(subscriptionName = "BasicConsumer", topics = "persistent://my-tenant/my-namespace/string_result")
     void listen(String message) {
         log.info("Incoming message: {}", message);
     }

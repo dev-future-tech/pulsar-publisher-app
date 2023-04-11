@@ -1,0 +1,148 @@
+= Consumer Schemas
+:author: Anthony Ikeda <anthony.ikeda@gmail.com>
+
+== Overview
+
+We've sent some basic messages as string messages, let's now look at how we can create schemas that define the message format we receive to create some more complex structures.
+
+We will be creating a tool that will manage developers being onboarded to a project.
+
+* The users' details will be entered into a UI
+* They will be assigned to a team
+* When activated, a request will be sent to provision a laptop for the user (requires the users' home address)
+
+In this example we wil deal with the "Activation" step, we will need:
+
+* A link to retrieve the users' details
+* A link to retrieve the users' address
+* A link to the team description to determine what type of laptop the user will need
+
+The workflow will be:
+
+Send `Activate User <user_id>`
+Get User `<user_id>` name
+Get User `<user_id>` team allocation
+Get User `<user_id>` address
+Get Team `<team_id>` resource requirements
+Send message to provision laptop
+
+
+=== Structs
+
+We will need the following structs:
+
+.ActivationRequest
+[source,json]
+----
+{
+  "namespace" : "com.system.provision",
+  "name" : "ActivationRequest",
+  "type" : "record",
+  "fields" : [
+    {
+      "name" : "user_id",
+      "type" : "integer"
+    },
+    {
+      "name" : "team_id",
+      "type" : "integer"
+    }
+  ]
+}
+----
+
+.UserTeamActivation
+[source,json]
+----
+{
+  "namespace" : "com.system.provision",
+  "name" : "UserTeamActivation",
+  "type" : "record",
+  "fields" : [
+    {
+      "name" : "User",
+      "namespace" : "com.system.provision",
+      "type" : "record",
+      "fields" : [
+        {
+          "name" : "user_id",
+          "type" : "integer"
+        },
+        {
+          "name" : "first_name",
+          "type" : "string"
+        },
+        {
+          "name" : "last_name",
+          "type" : "string"
+        }
+      ]
+    },
+    {
+      "name" : "Team",
+      "namespace" : "com.system.provision",
+      "type" : "record",
+      "fields" : [
+        {
+          "name" : "team_id",
+          "type" : "integer"
+        },
+        {
+          "name" : "Requirements",
+          "namespace" : "com.system.provision",
+          "type" : "array",
+          "items" : {
+            "name" : "Requirement",
+            "type" : "record",
+            "fields" : [
+              {
+                "name" : "requirement_type",
+                "type" : "string"
+              },
+              {
+                "name" : "quantity",
+                "type" : "integer"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
+----
+
+[plantuml, target=diagram-classes, format=png]
+....
+package com.system.provision {
+    class ActivationRequest {
+        User user
+        Team team
+    }
+
+    class User {
+        Integer userId
+        String firstName
+        String lastname
+    }
+
+    class Requirement {
+        String requirementType
+        Integer quantity
+    }
+
+    class Team {
+        Integer teamId
+        Requirement[] requirements
+    }
+
+}
+
+Team o-- Requirement
+ActivationRequest *-- User
+ActivationRequest *-- Team
+
+
+
+
+....
